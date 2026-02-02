@@ -21,6 +21,7 @@
                     <li><a href="#" class="nav-link" data-page="performance">📈 Performance</a></li>
                     <li><a href="#" class="nav-link" data-page="chatbot">🤖 AI Assistant</a></li>
                     <li><a href="#" class="nav-link" data-page="settings">⚙️ Settings</a></li>
+                    <li><a href="#" class="nav-link" onclick="handleLogout()" style="color: #ff6b6b;">🚪 Logout</a></li>
                 </ul>
             </nav>
         </aside>
@@ -31,13 +32,8 @@
             <div id="dashboard" class="page active">
                 <header class="page-header">
                     <h1>Dashboard</h1>
-                    <div class="user-selector">
-                        <label for="userId">Select User:</label>
-                        <select id="userId" onchange="loadDashboard()">
-                            <option value="1">John Doe</option>
-                            <option value="2">Jane Smith</option>
-                            <option value="3">Bob Wilson</option>
-                        </select>
+                    <div class="user-info">
+                        <span id="welcomeMessage" style="color: #667eea; font-weight: 600; margin-right: 20px;"></span>
                     </div>
                 </header>
 
@@ -194,6 +190,12 @@
                     <div class="card">
                         <h3>Bank Account</h3>
                         <div id="bankAccountInfo"></div>
+                        <div style="margin-top: 20px;">
+                            <button class="btn btn-primary" onclick="showBankAccountModal()" id="createAccountBtn" style="display: none;">Create Bank Account</button>
+                            <button class="btn btn-secondary" onclick="showBankAccountModal()" id="editAccountBtn" style="display: none;">Edit Account Details</button>
+                            <button class="btn btn-primary" onclick="showDepositModal()" id="depositBtn" style="display: none; margin-left: 10px;">Deposit Money</button>
+                            <button class="btn btn-secondary" onclick="showWithdrawModal()" id="withdrawBtn" style="display: none; margin-left: 10px;">Withdraw Money</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -201,14 +203,17 @@
     </div>
 
     <!-- Buy Stock Modal -->
-    <div id="buyStockModal" class="modal">
+    <div id="buyStockModal" class="modal" onclick="if(event.target === this) closeBuyStockModal()">
         <div class="modal-content">
             <span class="close" onclick="closeBuyStockModal()">&times;</span>
             <h2>Buy Stock</h2>
+            <div id="currentBalanceInfo" style="background: #f0f0f0; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 14px;">
+                <strong>Available Balance:</strong> <span id="availableBalance">Loading...</span>
+            </div>
             <form id="buyStockForm" onsubmit="buyStock(event)">
                 <div class="form-group">
                     <label for="stockSymbol">Stock Symbol:</label>
-                    <input type="text" id="stockSymbol" required>
+                    <input type="text" id="stockSymbol" required placeholder="e.g., AAPL">
                 </div>
                 <div class="form-group">
                     <label for="quantity">Quantity:</label>
@@ -218,7 +223,78 @@
                     <label for="buyPrice">Buy Price:</label>
                     <input type="number" id="buyPrice" step="0.01" min="0.01" required>
                 </div>
+                <div id="totalCostInfo" style="background: #e8f4f8; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 14px; display: none;">
+                    <strong>Total Cost:</strong> <span id="totalCostDisplay">$0.00</span>
+                </div>
                 <button type="submit" class="btn btn-primary">Buy</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bank Account Modal -->
+    <div id="bankAccountModal" class="modal" onclick="if(event.target === this) closeBankAccountModal()">
+        <div class="modal-content">
+            <span class="close" onclick="closeBankAccountModal()">&times;</span>
+            <h2 id="bankAccountModalTitle">Create Bank Account</h2>
+            <form id="bankAccountForm" onsubmit="saveBankAccount(event)">
+                <div class="form-group">
+                    <label for="accountNumber">Account Number:</label>
+                    <input type="text" id="accountNumber" required minlength="8" maxlength="50" placeholder="Enter account number">
+                </div>
+                <div class="form-group">
+                    <label for="bankName">Bank Name:</label>
+                    <input type="text" id="bankName" required maxlength="100" placeholder="e.g., HSBC Bank">
+                </div>
+                <div class="form-group">
+                    <label for="accountType">Account Type:</label>
+                    <select id="accountType" required>
+                        <option value="CHECKING">Checking</option>
+                        <option value="SAVINGS">Savings</option>
+                        <option value="BUSINESS">Business</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Deposit Modal -->
+    <div id="depositModal" class="modal" onclick="if(event.target === this) closeDepositModal()">
+        <div class="modal-content">
+            <span class="close" onclick="closeDepositModal()">&times;</span>
+            <h2>Deposit Money</h2>
+            <form id="depositForm" onsubmit="depositMoney(event)">
+                <div class="form-group">
+                    <label for="depositAmount">Amount:</label>
+                    <input type="number" id="depositAmount" step="0.01" min="0.01" required placeholder="Enter amount">
+                </div>
+                <div class="form-group">
+                    <label for="depositDescription">Description (Optional):</label>
+                    <input type="text" id="depositDescription" placeholder="e.g., Initial deposit">
+                </div>
+                <button type="submit" class="btn btn-primary">Deposit</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Withdraw Modal -->
+    <div id="withdrawModal" class="modal" onclick="if(event.target === this) closeWithdrawModal()">
+        <div class="modal-content">
+            <span class="close" onclick="closeWithdrawModal()">&times;</span>
+            <h2>Withdraw Money</h2>
+            <div id="withdrawBalanceInfo" style="background: #f0f0f0; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 14px;">
+                <strong>Available Balance:</strong> <span id="withdrawAvailableBalance">Loading...</span>
+            </div>
+            <form id="withdrawForm" onsubmit="withdrawMoney(event)">
+                <div class="form-group">
+                    <label for="withdrawAmount">Amount:</label>
+                    <input type="number" id="withdrawAmount" step="0.01" min="0.01" required placeholder="Enter amount">
+                </div>
+                <div class="form-group">
+                    <label for="withdrawDescription">Description (Optional):</label>
+                    <input type="text" id="withdrawDescription" placeholder="e.g., Cash withdrawal">
+                </div>
+                <button type="submit" class="btn btn-primary">Withdraw</button>
             </form>
         </div>
     </div>

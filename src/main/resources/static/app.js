@@ -1,15 +1,50 @@
 const API_BASE_URL = 'http://localhost:8080/api';
 
-let currentUserId = 1;
+let currentUserId = null;
 let assetAllocationChart = null;
 let portfolioGrowthChart = null;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
+    // Check authentication
+    checkAuthentication();
     setupNavigation();
     loadDashboard();
     loadUserInfo();
 });
+
+// Authentication check
+function checkAuthentication() {
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
+    
+    if (!token || !userId) {
+        // Not authenticated, redirect to login
+        window.location.href = 'login.html';
+        return;
+    }
+    
+    // Set current user ID
+    currentUserId = parseInt(userId);
+    
+    // Display welcome message
+    const firstName = localStorage.getItem('firstName') || 'User';
+    const lastName = localStorage.getItem('lastName') || '';
+    document.getElementById('welcomeMessage').textContent = `Welcome, ${firstName} ${lastName}`;
+}
+
+// Logout function
+function handleLogout() {
+    if (confirm('Are you sure you want to logout?')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('username');
+        localStorage.removeItem('email');
+        localStorage.removeItem('firstName');
+        localStorage.removeItem('lastName');
+        window.location.href = 'login.html';
+    }
+}
 
 // Navigation
 function setupNavigation() {
@@ -39,12 +74,18 @@ function showPage(pageName) {
         loadHoldings();
     } else if (pageName === 'performance') {
         loadPerformance();
+    } else if (pageName === 'settings') {
+        loadUserInfo();
+        loadBankAccountInfo();
     }
 }
 
 // Dashboard
 function loadDashboard() {
-    currentUserId = document.getElementById('userId').value;
+    if (!currentUserId) {
+        checkAuthentication();
+        return;
+    }
     loadPortfolio();
     loadTrendingStocks();
 }
@@ -294,13 +335,49 @@ function updateQuickActions(actions) {
 }
 
 // Buy/Sell Stock
-function showBuyStockModal() {
-    document.getElementById('buyStockModal').style.display = 'block';
+async function showBuyStockModal() {
+    const modal = document.getElementById('buyStockModal');
+    modal.style.display = 'block';
+    
+    // Load current balance
+    try {
+        const response = await fetch(`${API_BASE_URL}/bank-account/user/${currentUserId}`);
+        if (response.ok) {
+            const account = await response.json();
+            document.getElementById('availableBalance').textContent = formatCurrency(account.currentBalance);
+        } else {
+            document.getElementById('availableBalance').textContent = 'No account found';
+        }
+    } catch (error) {
+        document.getElementById('availableBalance').textContent = 'Error loading balance';
+    }
+    
+    // Calculate total cost as user types
+    const quantityInput = document.getElementById('quantity');
+    const priceInput = document.getElementById('buyPrice');
+    const totalCostDiv = document.getElementById('totalCostInfo');
+    const totalCostDisplay = document.getElementById('totalCostDisplay');
+    
+    function updateTotalCost() {
+        const quantity = parseInt(quantityInput.value) || 0;
+        const price = parseFloat(priceInput.value) || 0;
+        if (quantity > 0 && price > 0) {
+            const total = quantity * price;
+            totalCostDisplay.textContent = formatCurrency(total);
+            totalCostDiv.style.display = 'block';
+        } else {
+            totalCostDiv.style.display = 'none';
+        }
+    }
+    
+    quantityInput.addEventListener('input', updateTotalCost);
+    priceInput.addEventListener('input', updateTotalCost);
 }
 
 function closeBuyStockModal() {
     document.getElementById('buyStockModal').style.display = 'none';
     document.getElementById('buyStockForm').reset();
+    document.getElementById('totalCostInfo').style.display = 'none';
 }
 
 async function buyStock(event) {
@@ -309,6 +386,22 @@ async function buyStock(event) {
     const symbol = document.getElementById('stockSymbol').value.toUpperCase();
     const quantity = parseInt(document.getElementById('quantity').value);
     const buyPrice = parseFloat(document.getElementById('buyPrice').value);
+    
+    // Check balance before attempting purchase
+    try {
+        const balanceResponse = await fetch(`${API_BASE_URL}/bank-account/user/${currentUserId}`);
+        if (balanceResponse.ok) {
+            const account = await balanceResponse.json();
+            const totalCost = buyPrice * quantity;
+            
+            if (account.currentBalance < totalCost) {
+                alert(`Insufficient balance! You have ${formatCurrency(account.currentBalance)} but need ${formatCurrency(totalCost)}.`);
+                return;
+            }
+        }
+    } catch (error) {
+        console.error('Error checking balance:', error);
+    }
     
     try {
         const response = await fetch(`${API_BASE_URL}/portfolio/buy?userId=${currentUserId}&symbol=${symbol}&quantity=${quantity}&buyPrice=${buyPrice}`, {
@@ -320,6 +413,9 @@ async function buyStock(event) {
             closeBuyStockModal();
             loadDashboard();
             loadHoldings();
+            if (document.getElementById('settings').classList.contains('active')) {
+                loadBankAccountInfo();
+            }
         } else {
             const error = await response.json();
             alert('Error: ' + (error.message || 'Failed to buy stock'));
@@ -369,17 +465,240 @@ async function loadUserInfo() {
             <p><strong>Username:</strong> ${user.username}</p>
             <p><strong>Phone:</strong> ${user.phone || 'N/A'}</p>
         `;
-        
-        if (user.bankAccount) {
-            document.getElementById('bankAccountInfo').innerHTML = `
-                <p><strong>Account Number:</strong> ${user.bankAccount.accountNumber}</p>
-                <p><strong>Bank Name:</strong> ${user.bankAccount.bankName}</p>
-                <p><strong>Balance:</strong> ${formatCurrency(user.bankAccount.currentBalance)}</p>
-                <p><strong>Account Type:</strong> ${user.bankAccount.accountType}</p>
-            `;
-        }
     } catch (error) {
         console.error('Error loading user info:', error);
+    }
+}
+
+// Bank Account Info
+async function loadBankAccountInfo() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/bank-account/user/${currentUserId}`);
+        
+        if (response.ok) {
+            const account = await response.json();
+            
+            document.getElementById('bankAccountInfo').innerHTML = `
+                <p><strong>Account Number:</strong> ${account.accountNumber}</p>
+                <p><strong>Bank Name:</strong> ${account.bankName}</p>
+                <p><strong>Balance:</strong> <span style="font-size: 24px; color: #667eea; font-weight: bold;">${formatCurrency(account.currentBalance)}</span></p>
+                <p><strong>Account Type:</strong> ${account.accountType}</p>
+            `;
+            
+            // Show edit, deposit, and withdraw buttons
+            document.getElementById('createAccountBtn').style.display = 'none';
+            document.getElementById('editAccountBtn').style.display = 'inline-block';
+            document.getElementById('depositBtn').style.display = 'inline-block';
+            document.getElementById('withdrawBtn').style.display = 'inline-block';
+            
+            // Store account data for editing
+            window.currentBankAccount = account;
+        } else {
+            // No bank account exists
+            document.getElementById('bankAccountInfo').innerHTML = `
+                <p style="color: #666;">No bank account found. Create one to start managing your funds.</p>
+            `;
+            
+            // Show create button only
+            document.getElementById('createAccountBtn').style.display = 'inline-block';
+            document.getElementById('editAccountBtn').style.display = 'none';
+            document.getElementById('depositBtn').style.display = 'none';
+            document.getElementById('withdrawBtn').style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error loading bank account info:', error);
+        document.getElementById('bankAccountInfo').innerHTML = `
+            <p style="color: #dc3545;">Error loading bank account information.</p>
+        `;
+    }
+}
+
+// Bank Account Modal Functions
+function showBankAccountModal() {
+    const modal = document.getElementById('bankAccountModal');
+    const title = document.getElementById('bankAccountModalTitle');
+    const form = document.getElementById('bankAccountForm');
+    
+    if (window.currentBankAccount) {
+        // Edit mode
+        title.textContent = 'Edit Bank Account';
+        document.getElementById('accountNumber').value = window.currentBankAccount.accountNumber;
+        document.getElementById('bankName').value = window.currentBankAccount.bankName;
+        document.getElementById('accountType').value = window.currentBankAccount.accountType;
+    } else {
+        // Create mode
+        title.textContent = 'Create Bank Account';
+        form.reset();
+    }
+    
+    modal.style.display = 'block';
+}
+
+function closeBankAccountModal() {
+    document.getElementById('bankAccountModal').style.display = 'none';
+    document.getElementById('bankAccountForm').reset();
+}
+
+async function saveBankAccount(event) {
+    event.preventDefault();
+    
+    const accountNumber = document.getElementById('accountNumber').value.trim();
+    const bankName = document.getElementById('bankName').value.trim();
+    const accountType = document.getElementById('accountType').value;
+    
+    try {
+        let response;
+        if (window.currentBankAccount) {
+            // Update existing account
+            response = await fetch(`${API_BASE_URL}/bank-account/user/${currentUserId}/update`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    accountNumber: accountNumber,
+                    bankName: bankName,
+                    accountType: accountType
+                })
+            });
+        } else {
+            // Create new account
+            response = await fetch(`${API_BASE_URL}/bank-account/user/${currentUserId}/create`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    accountNumber: accountNumber,
+                    bankName: bankName,
+                    accountType: accountType
+                })
+            });
+        }
+        
+        if (response.ok) {
+            alert('Bank account saved successfully!');
+            closeBankAccountModal();
+            loadBankAccountInfo();
+        } else {
+            const error = await response.json();
+            alert('Error: ' + (error.message || 'Failed to save bank account'));
+        }
+    } catch (error) {
+        console.error('Error saving bank account:', error);
+        alert('Error saving bank account');
+    }
+}
+
+// Deposit Modal Functions
+function showDepositModal() {
+    document.getElementById('depositModal').style.display = 'block';
+}
+
+function closeDepositModal() {
+    document.getElementById('depositModal').style.display = 'none';
+    document.getElementById('depositForm').reset();
+}
+
+async function depositMoney(event) {
+    event.preventDefault();
+    
+    const amount = parseFloat(document.getElementById('depositAmount').value);
+    const description = document.getElementById('depositDescription').value.trim();
+    
+    if (amount <= 0) {
+        alert('Amount must be greater than 0');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/bank-account/user/${currentUserId}/deposit`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                amount: amount,
+                description: description || null
+            })
+        });
+        
+        if (response.ok) {
+            const account = await response.json();
+            alert(`Successfully deposited ${formatCurrency(amount)}. New balance: ${formatCurrency(account.currentBalance)}`);
+            closeDepositModal();
+            loadBankAccountInfo();
+            loadDashboard(); // Refresh dashboard to show updated balance
+        } else {
+            const error = await response.json();
+            alert('Error: ' + (error.message || 'Failed to deposit money'));
+        }
+    } catch (error) {
+        console.error('Error depositing money:', error);
+        alert('Error depositing money');
+    }
+}
+
+// Withdraw Modal Functions
+async function showWithdrawModal() {
+    const modal = document.getElementById('withdrawModal');
+    modal.style.display = 'block';
+    
+    // Load current balance
+    try {
+        const response = await fetch(`${API_BASE_URL}/bank-account/user/${currentUserId}`);
+        if (response.ok) {
+            const account = await response.json();
+            document.getElementById('withdrawAvailableBalance').textContent = formatCurrency(account.currentBalance);
+        } else {
+            document.getElementById('withdrawAvailableBalance').textContent = 'No account found';
+        }
+    } catch (error) {
+        document.getElementById('withdrawAvailableBalance').textContent = 'Error loading balance';
+    }
+}
+
+function closeWithdrawModal() {
+    document.getElementById('withdrawModal').style.display = 'none';
+    document.getElementById('withdrawForm').reset();
+}
+
+async function withdrawMoney(event) {
+    event.preventDefault();
+    
+    const amount = parseFloat(document.getElementById('withdrawAmount').value);
+    const description = document.getElementById('withdrawDescription').value.trim();
+    
+    if (amount <= 0) {
+        alert('Amount must be greater than 0');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/bank-account/user/${currentUserId}/withdraw`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                amount: amount,
+                description: description || null
+            })
+        });
+        
+        if (response.ok) {
+            const account = await response.json();
+            alert(`Successfully withdrew ${formatCurrency(amount)}. New balance: ${formatCurrency(account.currentBalance)}`);
+            closeWithdrawModal();
+            loadBankAccountInfo();
+            loadDashboard(); // Refresh dashboard to show updated balance
+        } else {
+            const error = await response.json();
+            alert('Error: ' + (error.message || 'Failed to withdraw money'));
+        }
+    } catch (error) {
+        console.error('Error withdrawing money:', error);
+        alert('Error withdrawing money');
     }
 }
 
