@@ -7,7 +7,7 @@ spring:
     # Database credentials - Change these to match your MySQL setup
     # Or use environment variables: ${DB_USERNAME:root} and ${DB_PASSWORD:root}
     username: root
-    password: piyush@2812
+    password: n3u3da!
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -19,11 +19,11 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
 
-  sql:
-    init:
-      mode: always
-      data-locations: classpath:data.sql
-      schema-locations: classpath:schema.sql
+#  sql:
+#    init:
+#      mode: always
+#      data-locations: classpath:data.sql
+#      schema-locations: classpath:schema.sql
 
 server:
   port: 8080

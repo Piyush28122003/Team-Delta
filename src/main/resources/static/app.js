@@ -31,6 +31,12 @@ function checkAuthentication() {
     const firstName = localStorage.getItem('firstName') || 'User';
     const lastName = localStorage.getItem('lastName') || '';
     document.getElementById('welcomeMessage').textContent = `Welcome, ${firstName} ${lastName}`;
+    
+    // Set user avatar initial
+    const avatarEl = document.getElementById('userAvatar');
+    if (avatarEl && firstName) {
+        avatarEl.textContent = (firstName[0] || 'U').toUpperCase();
+    }
 }
 
 // Logout function
@@ -723,5 +729,10 @@ function formatCurrency(value) {
 
 function formatPercent(value) {
     return (value || 0).toFixed(2) + '%';
+}
+
+// Floating chatbot icon handler
+function openChatbotFromFab() {
+    showPage('chatbot');
 }
 

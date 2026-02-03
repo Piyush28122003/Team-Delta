@@ -9,10 +9,11 @@
 </head>
 <body>
     <div class="container">
-        <!-- Sidebar Navigation -->
+        <!-- Top Navigation -->
         <aside class="sidebar">
             <div class="logo">
-                <h2>📊 Portfolio Manager</h2>
+                <div class="logo-icon">P</div>
+                <span class="logo-text">Portfolio</span>
             </div>
             <nav>
                 <ul>
@@ -24,6 +25,10 @@
                     <li><a href="#" class="nav-link" onclick="handleLogout()" style="color: #ff6b6b;">🚪 Logout</a></li>
                 </ul>
             </nav>
+            <div class="top-right-actions">
+                <span id="welcomeMessage" style="color: #4c1d95; font-weight: 600;"></span>
+                <div class="user-avatar" id="userAvatar">N</div>
+            </div>
         </aside>
 
         <!-- Main Content -->
@@ -31,9 +36,9 @@
             <!-- Dashboard Page -->
             <div id="dashboard" class="page active">
                 <header class="page-header">
-                    <h1>Dashboard</h1>
-                    <div class="user-info">
-                        <span id="welcomeMessage" style="color: #667eea; font-weight: 600; margin-right: 20px;"></span>
+                    <div>
+                        <h1>Portfolio Dashboard</h1>
+                        <p class="page-header-subtitle">Welcome back! Here's your portfolio overview.</p>
                     </div>
                 </header>
 
@@ -42,30 +47,38 @@
                     <div class="card">
                         <h3>Total Portfolio Value</h3>
                         <p class="value" id="totalValue">$0.00</p>
+                        <p class="card-meta" id="totalValueMeta">+0.00% vs. last period</p>
+                        <div class="card-icon">💰</div>
                     </div>
                     <div class="card">
                         <h3>Total Cost</h3>
                         <p class="value" id="totalCost">$0.00</p>
+                        <p class="card-meta">Baseline invested amount</p>
+                        <div class="card-icon">💳</div>
                     </div>
                     <div class="card">
                         <h3>Profit/Loss</h3>
                         <p class="value" id="profitLoss">$0.00</p>
+                        <p class="card-meta" id="profitLossMeta">Since inception</p>
+                        <div class="card-icon">📈</div>
                     </div>
                     <div class="card">
                         <h3>Profit/Loss %</h3>
                         <p class="value" id="profitLossPercent">0.00%</p>
+                        <p class="card-meta">YTD return</p>
+                        <div class="card-icon">📊</div>
                     </div>
                 </div>
 
                 <!-- Charts Row -->
                 <div class="charts-row">
                     <div class="chart-container">
-                        <h3>Asset Allocation</h3>
-                        <canvas id="assetAllocationChart"></canvas>
-                    </div>
-                    <div class="chart-container">
                         <h3>Portfolio Growth</h3>
                         <canvas id="portfolioGrowthChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Asset Allocation</h3>
+                        <canvas id="assetAllocationChart"></canvas>
                     </div>
                 </div>
 
@@ -201,6 +214,11 @@
             </div>
         </main>
     </div>
+
+    <!-- Floating Chatbot Icon -->
+    <button class="chatbot-fab" onclick="openChatbotFromFab()">
+        <span>💬</span>
+    </button>
 
     <!-- Buy Stock Modal -->
     <div id="buyStockModal" class="modal" onclick="if(event.target === this) closeBuyStockModal()">
