@@ -15,7 +15,7 @@
     <groupId>com.yourorg</groupId>
     <artifactId>portfolio-manager</artifactId>
     <version>1.0.0</version>
-    <name>Portfolio Manager</name>
+    <name>DeltaFolio AI</name>
     <description>Financial Portfolio Management System</description>
 
     <properties>

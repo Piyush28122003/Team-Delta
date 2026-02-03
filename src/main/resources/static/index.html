@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portfolio Manager - Dashboard</title>
+    <title>DeltaFolio AI - Dashboard</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -13,14 +13,15 @@
         <aside class="sidebar">
             <div class="logo">
                 <div class="logo-icon">P</div>
-                <span class="logo-text">Portfolio</span>
+                <span class="logo-text">DeltaFolio AI</span>
             </div>
             <nav>
                 <ul>
                     <li><a href="#" class="nav-link active" data-page="dashboard">🏠 Dashboard</a></li>
                     <li><a href="#" class="nav-link" data-page="holdings">💼 Holdings</a></li>
                     <li><a href="#" class="nav-link" data-page="performance">📈 Performance</a></li>
-                    <li><a href="#" class="nav-link" data-page="chatbot">🤖 AI Assistant</a></li>
+                    <li><a href="#" class="nav-link" data-page="news">📰 News</a></li>
+                    <li><a href="#" class="nav-link" data-page="chatbot">🤖 DeltaFinBot</a></li>
                     <li><a href="#" class="nav-link" data-page="settings">⚙️ Settings</a></li>
                     <li><a href="#" class="nav-link" onclick="handleLogout()" style="color: #ff6b6b;">🚪 Logout</a></li>
                 </ul>
@@ -38,7 +39,7 @@
                 <header class="page-header">
                     <div>
                         <h1>Portfolio Dashboard</h1>
-                        <p class="page-header-subtitle">Welcome back! Here's your portfolio overview.</p>
+                        <p class="page-header-subtitle">Intelligent Portfolio Management with AI Insights</p>
                     </div>
                 </header>
 
@@ -72,13 +73,19 @@
 
                 <!-- Charts Row -->
                 <div class="charts-row">
-                    <div class="chart-container">
-                        <h3>Portfolio Growth</h3>
-                        <canvas id="portfolioGrowthChart"></canvas>
+                    <div class="chart-container chart-container-wide">
+                        <h3>Value by holding</h3>
+                        <p class="chart-subtitle">Current value vs cost basis per stock · hover for details</p>
+                        <div class="chart-wrapper">
+                            <canvas id="portfolioGrowthChart"></canvas>
+                        </div>
                     </div>
-                    <div class="chart-container">
-                        <h3>Asset Allocation</h3>
-                        <canvas id="assetAllocationChart"></canvas>
+                    <div class="chart-container chart-container-doughnut">
+                        <h3>Asset allocation</h3>
+                        <p class="chart-subtitle">Share of portfolio per stock</p>
+                        <div class="chart-wrapper chart-wrapper-doughnut">
+                            <canvas id="assetAllocationChart"></canvas>
+                        </div>
                     </div>
                 </div>
 
@@ -164,16 +171,32 @@
                 </div>
             </div>
 
+            <!-- News Page -->
+            <div id="news" class="page">
+                <header class="page-header">
+                    <div>
+                        <h1>Stock & Market News</h1>
+                        <p class="page-header-subtitle">Latest news related to stocks and markets</p>
+                    </div>
+                </header>
+                <div class="news-grid" id="newsGrid">
+                    <p class="news-loading" id="newsLoading">Loading news...</p>
+                </div>
+            </div>
+
             <!-- Chatbot Page -->
             <div id="chatbot" class="page">
                 <header class="page-header">
-                    <h1>AI Portfolio Assistant</h1>
+                    <div>
+                        <h1>DeltaFinBot</h1>
+                        <p class="page-header-subtitle">Conversational Financial Portfolio System</p>
+                    </div>
                 </header>
 
                 <div class="chatbot-container">
                     <div class="chat-messages" id="chatMessages">
                         <div class="message bot-message">
-                            <p>👋 Hello! I'm your AI Portfolio Assistant. I can help you with portfolio analysis, risk assessment, and stock recommendations. How can I assist you today?</p>
+                            <p>👋 Hello! I'm DeltaFinBot, your Conversational Financial Portfolio System. I can help you with portfolio analysis, risk assessment, and stock recommendations. How can I assist you today?</p>
                         </div>
                     </div>
                     <div class="chat-input-container">

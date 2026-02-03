@@ -48,6 +48,10 @@ external:
     base-url: https://generativelanguage.googleapis.com/v1beta
     model: gemini-pro
 
+  newsapi:
+    base-url: https://newsapi.org/v2
+    api-key: ${NEWSAPI_API_KEY:ebfd4af70ccd48c287c89c51f44d6e8a}
+
 # JWT Configuration
 jwt:
   secret: ${JWT_SECRET:your-secret-key-change-in-production-min-256-bits}
@@ -55,7 +59,7 @@ jwt:
 
 # Application Configuration
 app:
-  name: Portfolio Manager
+  name: DeltaFolio AI - Intelligent Portfolio Management with AI Insights
   version: 1.0.0
 
 logging:

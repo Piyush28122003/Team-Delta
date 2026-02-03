@@ -80,6 +80,8 @@ function showPage(pageName) {
         loadHoldings();
     } else if (pageName === 'performance') {
         loadPerformance();
+    } else if (pageName === 'news') {
+        loadNews();
     } else if (pageName === 'settings') {
         loadUserInfo();
         loadBankAccountInfo();
@@ -118,9 +120,9 @@ async function loadPortfolio() {
         // Update holdings table
         updateHoldingsTable(portfolio.holdings);
         
-        // Update charts
-        updateAssetAllocationChart(portfolio.assetAllocation);
-        updatePortfolioGrowthChart(portfolio.holdings);
+        // Update charts (per-stock data + details)
+        updateAssetAllocationChart(portfolio.assetAllocation, portfolio.holdings, portfolio.totalValue);
+        updatePortfolioGrowthChart(portfolio.holdings, portfolio.totalValue);
     } catch (error) {
         console.error('Error loading portfolio:', error);
         alert('Error loading portfolio data');
@@ -146,68 +148,176 @@ function updateHoldingsTable(holdings) {
     });
 }
 
-function updateAssetAllocationChart(allocation) {
+function updateAssetAllocationChart(allocation, holdings, totalValue) {
     const ctx = document.getElementById('assetAllocationChart').getContext('2d');
-    
-    if (assetAllocationChart) {
-        assetAllocationChart.destroy();
-    }
-    
-    assetAllocationChart = new Chart(ctx, {
-        type: 'pie',
-        data: {
-            labels: ['Stocks', 'Bonds', 'Crypto', 'Cash'],
-            datasets: [{
-                data: [
-                    allocation.stocks || 0,
-                    allocation.bonds || 0,
-                    allocation.crypto || 0,
-                    allocation.cash || 0
-                ],
-                backgroundColor: [
-                    '#667eea',
-                    '#764ba2',
-                    '#f093fb',
-                    '#4facfe'
-                ]
-            }]
-        },
-        options: {
+    if (assetAllocationChart) assetAllocationChart.destroy();
+
+    const total = Number(totalValue) || 1;
+    const stockColors = ['#4c6fff', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+
+    if (holdings && holdings.length > 0) {
+        const labels = holdings.map(h => h.symbol + (h.companyName ? ' · ' + (h.companyName.length > 12 ? h.companyName.substring(0, 12) + '…' : h.companyName) : ''));
+        const data = holdings.map(h => Number(h.currentValue) || 0);
+        const colors = holdings.map((_, i) => stockColors[i % stockColors.length]);
+
+        assetAllocationChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                layout: { padding: { bottom: 8 } },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 10, boxHeight: 10, font: { size: 11 }, padding: 6 }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const h = holdings[context.dataIndex];
+                                const pct = total > 0 ? ((Number(h.currentValue) / total) * 100).toFixed(1) : 0;
+                                const pl = Number(h.profitLoss) || 0;
+                                const plPct = Number(h.profitLossPercentage) != null ? Number(h.profitLossPercentage).toFixed(1) : '-';
+                                return [
+                                    (h.companyName || h.symbol),
+                                    'Value: ' + formatCurrency(h.currentValue) + ' (' + pct + '% of portfolio)',
+                                    'P/L: ' + formatCurrency(pl) + ' (' + plPct + '%)'
+                                ];
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } else {
+        const labels = ['Stocks', 'Bonds', 'Crypto', 'Cash'];
+        const data = [
+            Number(allocation && allocation.stocks) || 0,
+            Number(allocation && allocation.bonds) || 0,
+            Number(allocation && allocation.crypto) || 0,
+            Number(allocation && allocation.cash) || 0
+        ];
+        assetAllocationChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#4facfe'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
             responsive: true,
-            maintainAspectRatio: true
+            maintainAspectRatio: true,
+            layout: { padding: { bottom: 8 } },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { boxWidth: 10, boxHeight: 10, font: { size: 11 }, padding: 6 }
+                }
+            }
         }
-    });
+        });
+    }
 }
 
-function updatePortfolioGrowthChart(holdings) {
+function updatePortfolioGrowthChart(holdings, totalValue) {
     const ctx = document.getElementById('portfolioGrowthChart').getContext('2d');
-    
-    if (portfolioGrowthChart) {
-        portfolioGrowthChart.destroy();
+    if (portfolioGrowthChart) portfolioGrowthChart.destroy();
+
+    if (!holdings || holdings.length === 0) {
+        portfolioGrowthChart = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: ['No holdings'], datasets: [{ label: 'Value', data: [0], backgroundColor: '#e5e7eb' }] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+        return;
     }
-    
-    // Mock historical data (in real app, fetch from API)
-    const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-    const data = [10000, 12000, 11500, 13000, 12500, 14000];
-    
+
+    const labels = holdings.map(h => h.symbol);
+    const currentValues = holdings.map(h => Number(h.currentValue) || 0);
+    const costValues = holdings.map(h => (Number(h.quantity) || 0) * (Number(h.buyPrice) || 0));
+    const total = Number(totalValue) || 1;
+
     portfolioGrowthChart = new Chart(ctx, {
-        type: 'line',
+        type: 'bar',
         data: {
             labels: labels,
-            datasets: [{
-                label: 'Portfolio Value',
-                data: data,
-                borderColor: '#667eea',
-                backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                tension: 0.4
-            }]
+            datasets: [
+                {
+                    label: 'Current value',
+                    data: currentValues,
+                    backgroundColor: 'rgba(79, 70, 229, 0.7)',
+                    borderColor: '#4c6fff',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Cost basis',
+                    data: costValues,
+                    backgroundColor: 'rgba(156, 163, 175, 0.6)',
+                    borderColor: '#9ca3af',
+                    borderWidth: 1
+                }
+            ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: true,
+            indexAxis: 'y',
             scales: {
+                x: {
+                    stacked: false,
+                    beginAtZero: true,
+                    ticks: { callback: function(v) { return '$' + (v >= 1000 ? (v/1000).toFixed(1) + 'k' : v); } }
+                },
                 y: {
-                    beginAtZero: false
+                    stacked: false,
+                    grid: { display: false }
+                }
+            },
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: {
+                    callbacks: {
+                        afterBody: function(context) {
+                            const ctx = Array.isArray(context) ? context[0] : context;
+                            const i = ctx && (ctx.dataIndex != null ? ctx.dataIndex : ctx.datasetIndex);
+                            if (i == null || !holdings[i]) return [];
+                            const h = holdings[i];
+                            const pct = total > 0 ? ((Number(h.currentValue) / total) * 100).toFixed(1) : 0;
+                            const plPct = h.profitLossPercentage != null ? Number(h.profitLossPercentage).toFixed(1) : '-';
+                            return [
+                                '──',
+                                'Share of portfolio: ' + pct + '%',
+                                'Quantity: ' + (h.quantity || 0),
+                                'Buy price: ' + formatCurrency(h.buyPrice),
+                                'Current price: ' + formatCurrency(h.currentPrice),
+                                'P/L: ' + formatCurrency(h.profitLoss) + ' (' + plPct + '%)'
+                            ];
+                        },
+                        title: function(context) {
+                            const ctx = Array.isArray(context) ? context[0] : context;
+                            const i = ctx && (ctx.dataIndex != null ? ctx.dataIndex : 0);
+                            const h = holdings[i];
+                            return h ? (h.companyName || h.symbol) + ' (' + h.symbol + ')' : '';
+                        }
+                    }
                 }
             }
         }
@@ -706,6 +816,55 @@ async function withdrawMoney(event) {
         console.error('Error withdrawing money:', error);
         alert('Error withdrawing money');
     }
+}
+
+// News (stock-related from NewsAPI)
+async function loadNews() {
+    const grid = document.getElementById('newsGrid');
+    const loadingEl = document.getElementById('newsLoading');
+    if (!grid) return;
+    if (loadingEl) loadingEl.textContent = 'Loading news...';
+    grid.innerHTML = loadingEl ? loadingEl.outerHTML : '<p class="news-loading">Loading news...</p>';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/news/stocks`);
+        const articles = await response.json();
+        if (!Array.isArray(articles) || articles.length === 0) {
+            grid.innerHTML = '<p class="news-error">No stock news available at the moment.</p>';
+            return;
+        }
+        grid.innerHTML = articles.map(article => {
+            const img = article.urlToImage
+                ? `<img class="news-card-image" src="${(article.urlToImage || '').replace(/"/g, '&quot;')}" alt="">`
+                : '<div class="news-card-image" style="display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:14px;">No image</div>';
+            const title = escapeHtml(article.title || 'No title');
+            const desc = escapeHtml(article.description || '');
+            const url = (article.url || '#').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            const meta = [article.sourceName, article.publishedAt].filter(Boolean).join(' · ');
+            return `
+                <article class="news-card">
+                    <a href="${url}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;color:inherit;">
+                        ${img}
+                        <div class="news-card-body">
+                            <h3 class="news-card-title">${title}</h3>
+                            ${meta ? `<p class="news-card-meta">${escapeHtml(meta)}</p>` : ''}
+                            ${desc ? `<p class="news-card-description">${desc}</p>` : ''}
+                            <span class="news-card-link">Read more →</span>
+                        </div>
+                    </a>
+                </article>`;
+        }).join('');
+    } catch (error) {
+        console.error('Error loading news:', error);
+        grid.innerHTML = '<p class="news-error">Failed to load news. Please try again later.</p>';
+    }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // Trending Stocks
