@@ -122,5 +122,16 @@ public class RiskCalculator {
             case AGGRESSIVE -> "High Risk - Focus on aggressive growth";
         };
     }
+    
+    /**
+     * Get risk level description in plain language for lay users
+     */
+    public static String getRiskLevelPlainDescription(RiskProfile.RiskCategory riskCategory) {
+        return switch (riskCategory) {
+            case CONSERVATIVE -> "Your portfolio is considered low risk. In simple terms: you're focused on protecting your money and avoiding big losses, rather than chasing high returns. Your investments should be relatively stable and predictable.";
+            case MODERATE -> "Your portfolio has medium risk. In simple terms: you're aiming for a balance — some growth potential without taking too many big gambles. You'll see some ups and downs, but they should be manageable.";
+            case AGGRESSIVE -> "Your portfolio is high risk. In simple terms: you're aiming for higher growth and are comfortable with bigger swings in value. Your investments may go up or down more sharply, so it's important to be prepared for that.";
+        };
+    }
 }
 

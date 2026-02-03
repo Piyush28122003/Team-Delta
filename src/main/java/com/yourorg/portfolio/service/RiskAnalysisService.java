@@ -85,6 +85,7 @@ public class RiskAnalysisService {
         dto.setMaxLossTolerance(riskProfile.getMaxLossTolerance());
         dto.setInvestmentHorizon(riskProfile.getInvestmentHorizon());
         dto.setRiskLevel(RiskCalculator.getRiskLevelDescription(riskProfile.getRiskCategory()));
+        dto.setRiskLevelPlain(RiskCalculator.getRiskLevelPlainDescription(riskProfile.getRiskCategory()));
         
         // Generate recommendations
         dto.setRecommendation(generateRecommendation(riskProfile, investments));
@@ -95,35 +96,35 @@ public class RiskAnalysisService {
     }
     
     /**
-     * Generate risk recommendation
+     * Generate risk recommendation in plain language for lay users
      */
     private String generateRecommendation(RiskProfile riskProfile, List<Investment> investments) {
         StringBuilder recommendation = new StringBuilder();
         
         switch (riskProfile.getRiskCategory()) {
             case CONSERVATIVE:
-                recommendation.append("Your portfolio is conservative. ");
+                recommendation.append("Your investments are set up in a cautious, safe way — which is great if you want to protect your money. ");
                 if (riskProfile.getDiversificationScore().compareTo(new BigDecimal("5.0")) < 0) {
-                    recommendation.append("Consider diversifying across more sectors.");
+                    recommendation.append("However, you're putting most of your eggs in few baskets. Spreading your money across different types of industries (like tech, healthcare, finance) can make your portfolio safer over time.");
                 } else {
-                    recommendation.append("Maintain current strategy for capital preservation.");
+                    recommendation.append("Keep doing what you're doing — your strategy fits well with your goal of preserving your capital.");
                 }
                 break;
                 
             case MODERATE:
-                recommendation.append("Your portfolio has moderate risk. ");
+                recommendation.append("Your portfolio strikes a middle ground between growth and stability — you're willing to take some risk for better returns. ");
                 if (riskProfile.getVolatilityScore().compareTo(new BigDecimal("6.0")) > 0) {
-                    recommendation.append("Consider adding some stable stocks to balance volatility.");
+                    recommendation.append("Your investments may swing up and down more than average. Adding a few steady, stable stocks could help smooth out the bumps.");
                 } else {
-                    recommendation.append("Good balance between growth and stability.");
+                    recommendation.append("You have a good balance — your mix of investments looks solid.");
                 }
                 break;
                 
             case AGGRESSIVE:
-                recommendation.append("Your portfolio is aggressive. ");
-                recommendation.append("Monitor closely and be prepared for higher volatility. ");
+                recommendation.append("Your portfolio is geared for higher growth, which means you're comfortable with bigger ups and downs. ");
+                recommendation.append("Keep an eye on your investments regularly, as they may change in value more often. ");
                 if (investments.size() < 5) {
-                    recommendation.append("Consider diversifying to reduce concentration risk.");
+                    recommendation.append("Spreading your money across more different stocks or funds can help reduce risk if one or two don't perform well.");
                 }
                 break;
         }
@@ -132,65 +133,65 @@ public class RiskAnalysisService {
     }
     
     /**
-     * Identify risk factors
+     * Identify risk factors in plain language for lay users
      */
     private List<String> identifyRiskFactors(RiskProfile riskProfile, List<Investment> investments) {
         List<String> factors = new ArrayList<>();
         
         if (riskProfile.getVolatilityScore().compareTo(new BigDecimal("7.0")) > 0) {
-            factors.add("High volatility detected in portfolio");
+            factors.add("Your portfolio value tends to swing up and down a lot — this means you could see bigger gains, but also bigger drops. It's something to be aware of and prepare for emotionally.");
         }
         
         if (riskProfile.getDiversificationScore().compareTo(new BigDecimal("5.0")) < 0) {
-            factors.add("Low diversification - concentrated in few sectors");
+            factors.add("Your money is concentrated in just a few industries. If one of those industries hits a rough patch, it could affect a large part of your portfolio. Spreading across more sectors helps cushion the blow.");
         }
         
         if (investments.size() < 3) {
-            factors.add("Limited number of holdings - concentration risk");
+            factors.add("You own only a small number of stocks or funds. If even one performs poorly, it could significantly impact your overall portfolio. Adding more holdings can spread out that risk.");
         }
         
         if (factors.isEmpty()) {
-            factors.add("No significant risk factors identified");
+            factors.add("We didn't spot any major concerns. Your portfolio looks well-structured for your risk level.");
         }
         
         return factors;
     }
     
     /**
-     * Generate suggestions
+     * Generate suggestions in plain language for lay users
      */
     private List<String> generateSuggestions(RiskProfile riskProfile, List<Investment> investments) {
         List<String> suggestions = new ArrayList<>();
         
         if (riskProfile.getDiversificationScore().compareTo(new BigDecimal("6.0")) < 0) {
-            suggestions.add("💡 Diversify across at least 5 different sectors");
-            suggestions.add("💡 Consider adding bonds or stable dividend stocks");
+            suggestions.add("💡 <strong>Spread your investments across at least 5 different sectors</strong> — For example: technology, healthcare, finance, consumer goods, and energy. This way, if one industry struggles, the others can help balance it out.");
+            suggestions.add("💡 <strong>Consider adding bonds or dividend-paying stocks</strong> — Bonds are generally steadier than stocks and pay regular interest. Dividend stocks are shares in companies that regularly share profits with investors — both can add stability to your portfolio.");
         }
         
         if (riskProfile.getVolatilityScore().compareTo(new BigDecimal("7.0")) > 0) {
-            suggestions.add("⚠️ High volatility - consider adding defensive stocks");
-            suggestions.add("⚠️ Maintain adequate cash reserves (10-20%)");
+            suggestions.add("⚠️ <strong>Add some defensive or stable stocks</strong> — These are companies (like utilities or consumer staples) whose value tends to hold up better when the market dips. They can help smooth out the ups and downs.");
+            suggestions.add("⚠️ <strong>Keep 10–20% of your money in cash</strong> — Having cash on hand lets you take advantage of dips without selling at a loss, and gives you peace of mind during market volatility.");
         }
         
         if (investments.size() < 5) {
-            suggestions.add("📊 Add more holdings to reduce concentration risk");
+            suggestions.add("📊 <strong>Add more holdings to reduce concentration risk</strong> — Instead of having a lot of money in just a few stocks, consider investing in more companies or funds. Think of it as not putting all your eggs in one basket.");
         }
         
         switch (riskProfile.getRiskCategory()) {
             case CONSERVATIVE:
-                suggestions.add("✅ Your conservative approach aligns with capital preservation goals");
+                suggestions.add("✅ <strong>You're on the right track</strong> — Your cautious approach matches your goal of protecting your money. Keep focusing on steady, reliable investments.");
                 break;
             case MODERATE:
-                suggestions.add("✅ Balanced portfolio suitable for moderate risk tolerance");
+                suggestions.add("✅ <strong>Your mix looks good</strong> — You're balancing growth potential with stability, which suits someone comfortable with moderate risk.");
                 break;
             case AGGRESSIVE:
-                suggestions.add("⚡ Monitor portfolio closely due to high-risk strategy");
-                suggestions.add("⚡ Consider rebalancing quarterly");
+                suggestions.add("⚡ <strong>Check in on your portfolio regularly</strong> — With a higher-risk strategy, values can change quickly. A quick monthly or quarterly review can help you stay on top of things.");
+                suggestions.add("⚡ <strong>Consider rebalancing every few months</strong> — If some investments grow a lot, selling a small amount and buying others can keep your risk level in line with your goals.");
                 break;
         }
         
         if (suggestions.isEmpty()) {
-            suggestions.add("✅ Your portfolio is well-balanced");
+            suggestions.add("✅ <strong>Your portfolio is well-balanced</strong> — No major changes needed. Keep up the good work!");
         }
         
         return suggestions;

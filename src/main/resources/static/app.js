@@ -369,16 +369,28 @@ async function loadPerformance() {
         
         const detailsDiv = document.getElementById('riskDetails');
         detailsDiv.innerHTML = `
-            <p><strong>Risk Level:</strong> ${analysis.riskLevel}</p>
-            <p><strong>Recommendation:</strong> ${analysis.recommendation}</p>
-            <h4>Risk Factors:</h4>
-            <ul>
-                ${analysis.riskFactors.map(factor => `<li>${factor}</li>`).join('')}
-            </ul>
-            <h4>Suggestions:</h4>
-            <ul>
-                ${analysis.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
-            </ul>
+            <div class="risk-section">
+                <h4>Your Risk Level — In Plain Terms</h4>
+                <p>${analysis.riskLevelPlain || analysis.riskLevel}</p>
+            </div>
+            <div class="risk-section">
+                <h4>Our Recommendation For You</h4>
+                <p>${analysis.recommendation}</p>
+            </div>
+            <div class="risk-section">
+                <h4>What Could Go Wrong? (Things to Watch)</h4>
+                <p class="section-desc">These are potential weak spots in your portfolio. Knowing them helps you make better decisions.</p>
+                <ul>
+                    ${analysis.riskFactors.map(factor => `<li>${factor}</li>`).join('')}
+                </ul>
+            </div>
+            <div class="risk-section">
+                <h4>What You Can Do Next (Action Steps)</h4>
+                <p class="section-desc">Simple, practical steps to strengthen your portfolio and feel more confident about your investments.</p>
+                <ul>
+                    ${analysis.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+                </ul>
+            </div>
         `;
     } catch (error) {
         console.error('Error loading performance:', error);
