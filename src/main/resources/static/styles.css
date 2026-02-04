@@ -154,6 +154,73 @@ nav ul li {
     font-size: 14px;
 }
 
+/* Market Indices - Sensex-style ticker */
+.market-indices-section {
+    margin-bottom: 28px;
+}
+
+.market-indices-title {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.market-indices-ticker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.market-index-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px 20px;
+    min-width: 180px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    border-left: 4px solid #6366f1;
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.market-index-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.market-index-name {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+.market-index-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 4px;
+    font-variant-numeric: tabular-nums;
+}
+
+.market-index-change {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.market-index-change.positive {
+    color: #059669;
+}
+
+.market-index-change.negative {
+    color: #dc2626;
+}
+
+.market-indices-loading {
+    color: #6b7280;
+    font-size: 14px;
+}
+
 /* Summary Cards */
 .summary-cards {
     display: grid;
@@ -320,6 +387,15 @@ tr:hover {
 
 .btn-secondary:hover {
     background: #5a6268;
+}
+
+.btn-danger {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
 }
 
 /* Chatbot */
@@ -493,6 +569,18 @@ tr:hover {
     color: #333;
 }
 
+.modal-confirm p {
+    margin: 16px 0 24px;
+    color: #4b5563;
+    font-size: 15px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
 .form-group {
     margin-bottom: 20px;
 }
@@ -636,6 +724,117 @@ tr:hover {
     box-shadow: 0 16px 35px rgba(79, 70, 229, 0.5);
 }
 
+/* Toast Notifications - Top Right */
+.toast-container {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 400px;
+    pointer-events: none;
+}
+
+.toast {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 20px;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
+    background: white;
+    border-left: 4px solid #6366f1;
+    pointer-events: auto;
+    animation: toastSlideIn 0.35s ease-out;
+}
+
+.toast.success {
+    border-left-color: #10b981;
+}
+
+.toast.success .toast-icon {
+    color: #10b981;
+}
+
+.toast.error {
+    border-left-color: #ef4444;
+}
+
+.toast.error .toast-icon {
+    color: #ef4444;
+}
+
+.toast.warning {
+    border-left-color: #f59e0b;
+}
+
+.toast.warning .toast-icon {
+    color: #f59e0b;
+}
+
+.toast-icon {
+    flex-shrink: 0;
+    font-size: 20px;
+    margin-top: 1px;
+}
+
+.toast-content {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #374151;
+}
+
+.toast-close {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: #9ca3af;
+    cursor: pointer;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    line-height: 1;
+    transition: color 0.2s, background 0.2s;
+}
+
+.toast-close:hover {
+    color: #6b7280;
+    background: #f3f4f6;
+}
+
+@keyframes toastSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.toast.hiding {
+    animation: toastSlideOut 0.3s ease-in forwards;
+}
+
+@keyframes toastSlideOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .main-content {
@@ -644,6 +843,12 @@ tr:hover {
     
     .charts-row {
         grid-template-columns: 1fr;
+    }
+    
+    .toast-container {
+        right: 16px;
+        left: 16px;
+        max-width: none;
     }
 }
 

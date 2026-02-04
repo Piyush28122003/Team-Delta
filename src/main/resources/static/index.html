@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
+    <div id="toastContainer" class="toast-container"></div>
     <div class="container">
         <!-- Top Navigation -->
         <aside class="sidebar">
@@ -42,6 +43,14 @@
                         <p class="page-header-subtitle">Intelligent Portfolio Management with AI Insights</p>
                     </div>
                 </header>
+
+                <!-- Market Indices (Sensex-style) -->
+                <div class="market-indices-section">
+                    <h3 class="market-indices-title"> Live Market Indices </h3>
+                    <div class="market-indices-ticker" id="marketIndicesTicker">
+                        <p class="market-indices-loading" id="marketIndicesLoading">Loading market data...</p>
+                    </div>
+                </div>
 
                 <!-- Portfolio Summary Cards -->
                 <div class="summary-cards">
@@ -347,6 +356,38 @@
                 </div>
                 <button type="submit" class="btn btn-primary">Withdraw</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Sell Stock Modal -->
+    <div id="sellStockModal" class="modal" onclick="if(event.target === this) closeSellStockModal()">
+        <div class="modal-content">
+            <span class="close" onclick="closeSellStockModal()">&times;</span>
+            <h2>Sell Stock</h2>
+            <div id="sellStockInfo" style="background: #f0f0f0; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 14px;">
+                <strong>Stock:</strong> <span id="sellStockSymbol">—</span><br>
+                <strong>Max Quantity:</strong> <span id="sellMaxQuantity">—</span>
+            </div>
+            <form id="sellStockForm" onsubmit="submitSellStock(event)">
+                <input type="hidden" id="sellInvestmentId" value="">
+                <div class="form-group">
+                    <label for="sellQuantity">Quantity to sell:</label>
+                    <input type="number" id="sellQuantity" min="1" required placeholder="Enter quantity">
+                </div>
+                <button type="submit" class="btn btn-primary">Sell</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="modal" onclick="if(event.target === this) closeLogoutModal()">
+        <div class="modal-content modal-confirm">
+            <h2>Logout</h2>
+            <p>Are you sure you want to logout?</p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeLogoutModal()">Cancel</button>
+                <button type="button" class="btn btn-primary btn-danger" onclick="confirmLogout()">Logout</button>
+            </div>
         </div>
     </div>
 

@@ -1,6 +1,40 @@
 const API_BASE_URL = 'http://localhost:8080/api';
 
 let currentUserId = null;
+
+// Toast notification - top right corner
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+
+    const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `
+        <span class="toast-icon">${icons[type] || icons.info}</span>
+        <span class="toast-content">${escapeHtml(message)}</span>
+        <button class="toast-close" type="button" aria-label="Close">&times;</button>
+    `;
+
+    const closeBtn = toast.querySelector('.toast-close');
+    const removeToast = () => {
+        toast.classList.add('hiding');
+        setTimeout(() => toast.remove(), 300);
+    };
+
+    closeBtn.addEventListener('click', removeToast);
+    container.appendChild(toast);
+
+    const duration = type === 'error' ? 6000 : 4000;
+    const timer = setTimeout(removeToast, duration);
+    toast._timer = timer;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
 let assetAllocationChart = null;
 let portfolioGrowthChart = null;
 
@@ -41,15 +75,22 @@ function checkAuthentication() {
 
 // Logout function
 function handleLogout() {
-    if (confirm('Are you sure you want to logout?')) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('userId');
-        localStorage.removeItem('username');
-        localStorage.removeItem('email');
-        localStorage.removeItem('firstName');
-        localStorage.removeItem('lastName');
-        window.location.href = 'login.html';
-    }
+    document.getElementById('logoutModal').style.display = 'block';
+}
+
+function closeLogoutModal() {
+    document.getElementById('logoutModal').style.display = 'none';
+}
+
+function confirmLogout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('username');
+    localStorage.removeItem('email');
+    localStorage.removeItem('firstName');
+    localStorage.removeItem('lastName');
+    closeLogoutModal();
+    window.location.href = 'login.html';
 }
 
 // Navigation
@@ -94,8 +135,44 @@ function loadDashboard() {
         checkAuthentication();
         return;
     }
+    loadMarketIndices();
     loadPortfolio();
     loadTrendingStocks();
+}
+
+async function loadMarketIndices() {
+    const container = document.getElementById('marketIndicesTicker');
+    const loadingEl = document.getElementById('marketIndicesLoading');
+    if (!container) return;
+    try {
+        const response = await fetch(`${API_BASE_URL}/market-indices`);
+        const indices = await response.json();
+        loadingEl.style.display = 'none';
+        container.innerHTML = indices.map(idx => {
+            const isUp = idx.trend === 'UP';
+            const changeSign = isUp ? '+' : '';
+            const changeClass = isUp ? 'positive' : 'negative';
+            return `
+                <div class="market-index-card">
+                    <div class="market-index-name">${escapeHtml(idx.name)}</div>
+                    <div class="market-index-value">${formatIndexValue(idx.value)}</div>
+                    <div class="market-index-change ${changeClass}">
+                        ${changeSign}${formatIndexValue(idx.change)} (${changeSign}${Number(idx.changePercent).toFixed(2)}%)
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error loading market indices:', error);
+        loadingEl.textContent = 'Market data unavailable';
+    }
+}
+
+function formatIndexValue(val) {
+    if (val == null) return '—';
+    const n = Number(val);
+    if (n >= 1000) return n.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    return n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 async function loadPortfolio() {
@@ -125,7 +202,7 @@ async function loadPortfolio() {
         updatePortfolioGrowthChart(portfolio.holdings, portfolio.totalValue);
     } catch (error) {
         console.error('Error loading portfolio:', error);
-        alert('Error loading portfolio data');
+        showToast('Error loading portfolio data', 'error');
     }
 }
 
@@ -346,13 +423,13 @@ async function loadHoldings() {
                 <td class="${holding.profitLoss >= 0 ? 'positive' : 'negative'}">${formatCurrency(holding.profitLoss)}</td>
                 <td class="${holding.profitLossPercentage >= 0 ? 'positive' : 'negative'}">${formatPercent(holding.profitLossPercentage)}</td>
                 <td>
-                    <button class="btn btn-secondary" onclick="showSellStockModal(${holding.investmentId}, ${holding.quantity})">Sell</button>
+                    <button class="btn btn-secondary" onclick="showSellStockModal(${holding.investmentId}, ${holding.quantity}, '${(holding.symbol || '').replace(/'/g, "&#39;")}')">Sell</button>
                 </td>
             `;
         });
     } catch (error) {
         console.error('Error loading holdings:', error);
-        alert('Error loading holdings');
+        showToast('Error loading holdings', 'error');
     }
 }
 
@@ -394,7 +471,7 @@ async function loadPerformance() {
         `;
     } catch (error) {
         console.error('Error loading performance:', error);
-        alert('Error loading performance data');
+        showToast('Error loading performance data', 'error');
     }
 }
 
@@ -523,7 +600,7 @@ async function buyStock(event) {
             const totalCost = buyPrice * quantity;
             
             if (account.currentBalance < totalCost) {
-                alert(`Insufficient balance! You have ${formatCurrency(account.currentBalance)} but need ${formatCurrency(totalCost)}.`);
+                showToast(`Insufficient balance! You have ${formatCurrency(account.currentBalance)} but need ${formatCurrency(totalCost)}.`, 'error');
                 return;
             }
         }
@@ -537,7 +614,7 @@ async function buyStock(event) {
         });
         
         if (response.ok) {
-            alert('Stock purchased successfully!');
+            showToast('Stock purchased successfully!', 'success');
             closeBuyStockModal();
             loadDashboard();
             loadHoldings();
@@ -546,18 +623,38 @@ async function buyStock(event) {
             }
         } else {
             const error = await response.json();
-            alert('Error: ' + (error.message || 'Failed to buy stock'));
+            showToast('Error: ' + (error.message || 'Failed to buy stock'), 'error');
         }
     } catch (error) {
         console.error('Error buying stock:', error);
-        alert('Error buying stock');
+        showToast('Error buying stock', 'error');
     }
 }
 
-function showSellStockModal(investmentId, maxQuantity) {
-    const quantity = prompt(`Enter quantity to sell (max: ${maxQuantity}):`, maxQuantity);
-    if (quantity && quantity > 0 && quantity <= maxQuantity) {
-        sellStock(investmentId, parseInt(quantity));
+function showSellStockModal(investmentId, maxQuantity, symbol) {
+    document.getElementById('sellInvestmentId').value = investmentId;
+    document.getElementById('sellStockSymbol').textContent = symbol || '—';
+    document.getElementById('sellMaxQuantity').textContent = maxQuantity;
+    document.getElementById('sellQuantity').value = maxQuantity;
+    document.getElementById('sellQuantity').max = maxQuantity;
+    document.getElementById('sellStockModal').style.display = 'block';
+}
+
+function closeSellStockModal() {
+    document.getElementById('sellStockModal').style.display = 'none';
+    document.getElementById('sellStockForm').reset();
+}
+
+function submitSellStock(event) {
+    event.preventDefault();
+    const investmentId = parseInt(document.getElementById('sellInvestmentId').value);
+    const quantity = parseInt(document.getElementById('sellQuantity').value);
+    const maxQuantity = parseInt(document.getElementById('sellMaxQuantity').textContent);
+    if (quantity > 0 && quantity <= maxQuantity) {
+        closeSellStockModal();
+        sellStock(investmentId, quantity);
+    } else {
+        showToast(`Please enter a quantity between 1 and ${maxQuantity}`, 'warning');
     }
 }
 
@@ -568,16 +665,16 @@ async function sellStock(investmentId, quantity) {
         });
         
         if (response.ok) {
-            alert('Stock sold successfully!');
+            showToast('Stock sold successfully!', 'success');
             loadDashboard();
             loadHoldings();
         } else {
             const error = await response.json();
-            alert('Error: ' + (error.message || 'Failed to sell stock'));
+            showToast('Error: ' + (error.message || 'Failed to sell stock'), 'error');
         }
     } catch (error) {
         console.error('Error selling stock:', error);
-        alert('Error selling stock');
+        showToast('Error selling stock', 'error');
     }
 }
 
@@ -705,16 +802,16 @@ async function saveBankAccount(event) {
         }
         
         if (response.ok) {
-            alert('Bank account saved successfully!');
+            showToast('Bank account saved successfully!', 'success');
             closeBankAccountModal();
             loadBankAccountInfo();
         } else {
             const error = await response.json();
-            alert('Error: ' + (error.message || 'Failed to save bank account'));
+            showToast('Error: ' + (error.message || 'Failed to save bank account'), 'error');
         }
     } catch (error) {
         console.error('Error saving bank account:', error);
-        alert('Error saving bank account');
+        showToast('Error saving bank account', 'error');
     }
 }
 
@@ -735,7 +832,7 @@ async function depositMoney(event) {
     const description = document.getElementById('depositDescription').value.trim();
     
     if (amount <= 0) {
-        alert('Amount must be greater than 0');
+        showToast('Amount must be greater than 0', 'warning');
         return;
     }
     
@@ -753,17 +850,17 @@ async function depositMoney(event) {
         
         if (response.ok) {
             const account = await response.json();
-            alert(`Successfully deposited ${formatCurrency(amount)}. New balance: ${formatCurrency(account.currentBalance)}`);
+            showToast(`Successfully deposited ${formatCurrency(amount)}. New balance: ${formatCurrency(account.currentBalance)}`, 'success');
             closeDepositModal();
             loadBankAccountInfo();
             loadDashboard(); // Refresh dashboard to show updated balance
         } else {
             const error = await response.json();
-            alert('Error: ' + (error.message || 'Failed to deposit money'));
+            showToast('Error: ' + (error.message || 'Failed to deposit money'), 'error');
         }
     } catch (error) {
         console.error('Error depositing money:', error);
-        alert('Error depositing money');
+        showToast('Error depositing money', 'error');
     }
 }
 
@@ -798,7 +895,7 @@ async function withdrawMoney(event) {
     const description = document.getElementById('withdrawDescription').value.trim();
     
     if (amount <= 0) {
-        alert('Amount must be greater than 0');
+        showToast('Amount must be greater than 0', 'warning');
         return;
     }
     
@@ -816,17 +913,17 @@ async function withdrawMoney(event) {
         
         if (response.ok) {
             const account = await response.json();
-            alert(`Successfully withdrew ${formatCurrency(amount)}. New balance: ${formatCurrency(account.currentBalance)}`);
+            showToast(`Successfully withdrew ${formatCurrency(amount)}. New balance: ${formatCurrency(account.currentBalance)}`, 'success');
             closeWithdrawModal();
             loadBankAccountInfo();
             loadDashboard(); // Refresh dashboard to show updated balance
         } else {
             const error = await response.json();
-            alert('Error: ' + (error.message || 'Failed to withdraw money'));
+            showToast('Error: ' + (error.message || 'Failed to withdraw money'), 'error');
         }
     } catch (error) {
         console.error('Error withdrawing money:', error);
-        alert('Error withdrawing money');
+        showToast('Error withdrawing money', 'error');
     }
 }
 
