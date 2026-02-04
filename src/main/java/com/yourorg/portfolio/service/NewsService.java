@@ -1,6 +1,7 @@
 package com.yourorg.portfolio.service;
 
 import com.yourorg.portfolio.dto.NewsArticleDTO;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -13,7 +14,16 @@ import java.util.stream.Collectors;
 @Service
 public class NewsService {
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
+
+    @Autowired
+    public NewsService() {
+        this.restTemplate = new RestTemplate();
+    }
+
+    public NewsService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate != null ? restTemplate : new RestTemplate();
+    }
 
     @Value("${external.newsapi.base-url}")
     private String baseUrl;
