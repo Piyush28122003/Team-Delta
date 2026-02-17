@@ -14,6 +14,7 @@ public class RiskAnalysisDTO {
     private BigDecimal maxLossTolerance;
     private RiskProfile.InvestmentHorizon investmentHorizon;
     private String riskLevel;
+    private String riskLevelPlain;
     private String recommendation;
     private List<String> riskFactors;
     private List<String> suggestions;
@@ -83,6 +84,14 @@ public class RiskAnalysisDTO {
     
     public void setRiskLevel(String riskLevel) {
         this.riskLevel = riskLevel;
+    }
+    
+    public String getRiskLevelPlain() {
+        return riskLevelPlain;
+    }
+    
+    public void setRiskLevelPlain(String riskLevelPlain) {
+        this.riskLevelPlain = riskLevelPlain;
     }
     
     public String getRecommendation() {
